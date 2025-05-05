@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pixel Duel</title>
+  <title>Pixel Duel - Solo Mode</title>
   <style>
     html, body {
       margin: 0;
@@ -32,7 +32,7 @@
     const bullets = [];
 
     const player1 = { x: 50, y: 50, color: 'red', up: 'w', down: 's', left: 'a', right: 'd', shoot: 'f', dx: 0, dy: 0, score: 0 };
-    const player2 = { x: 730, y: 530, color: 'blue', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', shoot: 'l', dx: 0, dy: 0, score: 0 };
+    const aiPlayer = { x: 730, y: 530, color: 'blue', dx: 0, dy: 0, score: 0, cooldown: 0 };
 
     const keys = {};
 
@@ -50,14 +50,26 @@
       if (keys[player.up]) player.dy = -speed;
       if (keys[player.down]) player.dy = speed;
       if (keys[player.shoot] && !player.cooldown) {
-        const dir = player === player1 ? { x: 1, y: 0 } : { x: -1, y: 0 };
-        shoot(player, dir.x, dir.y);
+        shoot(player, 1, 0);
         player.cooldown = 15;
       }
       player.x += player.dx;
       player.y += player.dy;
-
       if (player.cooldown > 0) player.cooldown--;
+    }
+
+    function updateAI(player, target) {
+      player.dy = 0;
+      if (target.y < player.y) player.dy = -speed;
+      else if (target.y > player.y) player.dy = speed;
+      player.y += player.dy;
+
+      if (player.cooldown <= 0) {
+        shoot(player, -1, 0);
+        player.cooldown = 40;
+      } else {
+        player.cooldown--;
+      }
     }
 
     function updateBullets() {
@@ -74,7 +86,7 @@
           continue;
         }
 
-        const target = b.owner === player1 ? player2 : player1;
+        const target = b.owner === player1 ? aiPlayer : player1;
         if (
           b.x > target.x && b.x < target.x + playerSize &&
           b.y > target.y && b.y < target.y + playerSize
@@ -89,8 +101,8 @@
     function resetPlayers() {
       player1.x = 50;
       player1.y = 50;
-      player2.x = 730;
-      player2.y = 530;
+      aiPlayer.x = 730;
+      aiPlayer.y = 530;
       bullets.length = 0;
     }
 
@@ -109,17 +121,17 @@
     function drawScore() {
       ctx.fillStyle = 'white';
       ctx.font = '20px monospace';
-      ctx.fillText(`Red: ${player1.score}`, 20, 30);
-      ctx.fillText(`Blue: ${player2.score}`, 650, 30);
+      ctx.fillText(`You: ${player1.score}`, 20, 30);
+      ctx.fillText(`AI: ${aiPlayer.score}`, 650, 30);
     }
 
     function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       updatePlayer(player1);
-      updatePlayer(player2);
+      updateAI(aiPlayer, player1);
       updateBullets();
       drawPlayer(player1);
-      drawPlayer(player2);
+      drawPlayer(aiPlayer);
       drawBullets();
       drawScore();
       requestAnimationFrame(gameLoop);
